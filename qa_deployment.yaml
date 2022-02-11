@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qa-web-dep-equipmentsummaryapi
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: equipmentsummaryapi
+  template:
+    metadata:
+      labels:
+        app: equipmentsummaryapi
+    spec:
+      containers:
+        - name: equipmentsummaryapi-back-end
+          image: 567234402044.dkr.ecr.us-east-1.amazonaws.com/dev.telematics.eksequipmentsummaryapi:latest
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: equipmentsummary-config
