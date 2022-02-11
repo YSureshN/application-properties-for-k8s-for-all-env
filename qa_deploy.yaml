@@ -1,0 +1,46 @@
+version: 0.2
+
+phases:
+
+  pre_build:
+    commands: 
+      - echo docker info
+      - docker info
+      - echo Loggin in to Amazon ECR... 
+      - echo aws --version
+      - IMAGE_REPO_NAME=dev.telematics.eksequipmentsummaryapi
+      - REPO_URI=567234402044.dkr.ecr.us-east-1.amazonaws.com/$IMAGE_REPO_NAME 
+      - docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD
+      - $(aws ecr get-login --no-include-email --region us-east-1)
+      #- echo Scanning through Fortify....
+
+  post_build:
+    commands: 
+      - echo Build completed on `date` 
+      - echo Pushing the Docker image....
+      - echo "Build with $IMAGE_REPO_NAME, $REPO_URI, $IMAGE_TAG" 
+      - docker pull 567234402044.dkr.ecr.us-east-1.amazonaws.com/dev.telematics.eksequipmentsummaryapi:latest
+      - export AWS_ACCESS_KEY_ID="$(echo ${CREDENTIALS} | jq -r '.Credentials.AccessKeyId')"
+      - export AWS_SECRET_ACCESS_KEY="$(echo ${CREDENTIALS} | jq -r '.Credentials.SecretAccessKey')"
+      - export AWS_SESSION_TOKEN="$(echo ${CREDENTIALS} | jq -r '.Credentials.SessionToken')"
+      - export AWS_EXPIRATION=$(echo ${CREDENTIALS} | jq -r '.Credentials.Expiration')
+      - aws eks update-kubeconfig --name qa-elevatetelematics-ms
+      - echo Deleting deployment instance....
+      - pwd
+      - ls -lts
+      - cd src/main/resources
+      - pwd
+      - ls -lts
+      - cp application.properties ../../../
+      - pwd
+      - sed 's/dev/qa/g' application.properties
+      - kubectl delete configmap equipmentsummary-config 
+      - kubectl create configmap equipmentsummary-config --from-file=application-qa.properties
+      - cd ../../../
+      - pwd
+      - ls -lts
+      - kubectl apply -f qa_deployment.yaml 
+      - kubectl rollout restart deployment qa-web-dep-equipmentsummaryapi
+      - kubectl apply -f service.yaml
+      - printf '[{"name":"%s","imageUri":"%s"}]' $IMAGE_REPO_NAME $REPO_URI:$IMAGE_TAG > imagedefinitions.json 
+      - cat imagedefinitions.json
