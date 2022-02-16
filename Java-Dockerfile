@@ -1,0 +1,9 @@
+FROM debian:10
+RUN apt-get update -y && apt-get install procps curl dpkg openjdk-11-jdk sudo -y
+RUN curl -sk https://o.hercrentals.com/files/epp/installers/epp_installer_docker.sh -o epp_installer_docker.sh
+EXPOSE 8080/udp
+ADD target/lighttower-udp-listener-1.0-SNAPSHOT.jar lighttower-udp-listener-1.0-SNAPSHOT.jar
+ADD start.sh start.sh
+RUN chmod 700 epp_installer_docker.sh start.sh
+RUN ./epp_installer_docker.sh
+ENTRYPOINT ["./start.sh"]
