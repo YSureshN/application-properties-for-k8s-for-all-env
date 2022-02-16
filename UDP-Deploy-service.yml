@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-telematics-ekslighttowerudpapi
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lighttowerapiudp
+  template:
+    metadata:
+      labels:
+        app: lighttowerapiudp
+    spec:
+      containers:
+        - name: lighttowerudplistner
+          image: 567234402044.dkr.ecr.us-east-1.amazonaws.com/dev.telematics.ekslighttowerudpapi:latest
+          ports:
+            - containerPort: 9090
+              protocol: UDP
+            - containerPort: 9091
+              protocol: UDP
+            - containerPort: 9092
+              protocol: UDP
+            - containerPort: 8080
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dev-telematics-ekslighttowerudpapi
+  labels:
+    app: lighttowerapiudp
+spec:
+  type: NodePort
+  selector:
+    app: lighttowerapiudp
+  ports:
+    - port: 53
+      name: udp
+      protocol: UDP
+      targetPort: 9090
+      nodePort: 31406
+    - port: 53
+      name: ping
+      protocol: TCP
+      targetPort: 8080
+      nodePort: 31406
