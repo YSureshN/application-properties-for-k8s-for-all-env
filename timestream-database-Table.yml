@@ -28,8 +28,30 @@ Resources:
     Type: "AWS::SNS::Topic"
     Properties:
       Subscription:
-        - Endpoint: "replaceme@deloitte.com" # PUT YOUR EMAIL ADDRESS HERE
+        - Endpoint: "venkthota@deloitte.com" # PUT EMAIL id's of the members whom to wanto receive the email
           Protocol: "email"
+      TopicName: 
+        'Fn::Join':
+          - '-'
+          - - Ref: Environment
+            - telematics-backend-SNStopic
+      Tags: 
+        - Key: "Environment"
+          Value: 
+            Ref: Environment         
+        - Key: "ResourceType"
+          Value: "SNS topic"
+        - Key: "CostCenter"
+          Value: "9038"
+        - Key: "ITOwner"
+          Value: "Sunil Gupta"
+        - Key: "Name"
+          Value: 
+            'Fn::Join':
+              - '-'
+              - - Ref: Environment
+                - telematics-backend-SNStopic
+                
   
   #-----------------------------------------------------------------------------
   # This Function for AWS Timestream Database
@@ -43,9 +65,9 @@ Resources:
           - '-'
           - - Ref: Environment
             - telematics-timestream
-      KmsKeyId:
-        minLength: 1
-        maxLength: 2048
+      #KmsKeyId: 
+       # minLength: 1
+       # maxLength: 2048
       
       Tags: 
         - Key: "Environment"
