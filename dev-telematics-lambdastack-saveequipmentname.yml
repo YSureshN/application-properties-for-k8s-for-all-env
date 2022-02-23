@@ -1,0 +1,33 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Lambda application.
+Resources:
+  function:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: qa-telematics-save-equipment-name
+      CodeUri: s3://dev.telematics.outartifacts/ca3bebcd29d5dda57f5d92da9614a634
+      Handler: herc.telematics.saveequipname.handler.EquipmentNameHandler::handleRequest
+      Environment:
+        Variables:
+          ConnectionString: '{{resolve:secretsmanager:telematics/elevate:SecretString:dev}}'
+          cachePort: 6379
+          cacheconnectionUrl: qa-telematics-elasticcache.9zmxds.0001.use1.cache.amazonaws.com
+      Runtime: java11
+      Description: Java function
+      MemorySize: 512
+      Timeout: 30
+      Tracing: Active
+      VpcConfig:
+        SecurityGroupIds:
+        - sg-96aa31ee
+        SubnetIds:
+        - subnet-bc28a093
+        - subnet-dd038785
+      Tags:
+        CostCenter: '9038'
+        ITOwner: Sunil Gupta
+        Environment: dev
+        ResourceType: LambdaFunction
+        Application: Elevate-Telematics
+        Name: dev-telematics-save-equipment-name
