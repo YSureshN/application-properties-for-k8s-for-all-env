@@ -369,6 +369,7 @@ Resources:
                 - lambda:GetFunctionConfiguration
                 - lambda:DeleteFunction
                 - lambda:InvokeFunction
+                - lambda:InvokeAsync
                 - lambda:UpdateFunctionCode
                 - resource-groups:ListGroups
                 - resource-groups:ListGroupResources
@@ -966,6 +967,34 @@ Resources:
       Roles: 
         - !Ref TelematicsEKSNodeGroupRole
 
+  TelematicsEKSclusterNodegroupSecretmanagerReadOnly:
+    Type: AWS::IAM::ManagedPolicy
+    Properties: 
+      Description: Managed Policy to attach to EKScluster Role
+      #ManagedPolicyName: telematicsgeofenceDispatcherSecretmanagerReadOnly
+      ManagedPolicyName:
+        Fn::Join:
+          - '-'
+          - - Ref: Project
+            - EKSClusterNodeGroupSecretmanagerReadOnly
+      Path: /
+      PolicyDocument: 
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'secretsmanager:GetRandomPassword'
+              - 'secretsmanager:GetResourcePolicy'
+              - 'secretsmanager:UntagResource'
+              - 'secretsmanager:GetSecretValue'
+              - 'secretsmanager:DescribeSecret'
+              - 'secretsmanager:ListSecretVersionIds'
+              - 'secretsmanager:ListSecrets'
+              - 'secretsmanager:TagResource'
+            Resource: '*'
+      Roles: 
+        - !Ref TelematicsEKSclusterRole
+
   #-----------------------------------------------------------------------------
   # This Role for Kinesis Data Analytics
   #-----------------------------------------------------------------------------
@@ -1000,7 +1029,9 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: 'cloudformation:*'
+                Action: 
+                 - 'cloudformation:*'
+                 - 'kinesis:DescribeStream'
                 Resource: '*'
       ManagedPolicyArns: 
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
@@ -1160,7 +1191,9 @@ Resources:
             Version: "2012-10-17"
             Statement:
               - Effect: Allow
-                Action: 'cloudformation:*'
+                Action: 
+                 - 'cloudformation:*'
+                 - 'kinesis:DescribeStream'
                 Resource: '*'
       ManagedPolicyArns: 
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
