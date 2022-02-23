@@ -57,6 +57,7 @@ Resources:
             Principal:
               Service:
                 - codebuild.amazonaws.com
+                - cloudformation.amazonaws.com
             Action:
               - 'sts:AssumeRole'
       Policies:
@@ -239,8 +240,6 @@ Resources:
                   - 'ec2:*'
                   - 'elasticloadbalancing:*'
                   - 'autoscaling:*'
-                  - 'cloudwatch:*'
-                  - 's3:*'
                   - 'sns:*'
                   - 'cloudformation:*'
                   - 'rds:*'
@@ -302,11 +301,11 @@ Resources:
             - sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonRDSFullAccess
-        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+        #- arn:aws:iam::aws:policy/CloudWatchFullAccess
         - arn:aws:iam::aws:policy/AmazonSQSFullAccess
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonKinesisFullAccess
-        - arn:aws:iam::aws:policy/AmazonSNSFullAccess
+        #- arn:aws:iam::aws:policy/AmazonSNSFullAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/service-role/AWSAppSyncPushToCloudWatchLogs
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
@@ -323,7 +322,6 @@ Resources:
             Statement:
             - Effect: Allow
               Action:
-                - dynamodb:*
                 - dax:*
                 - application-autoscaling:DeleteScalingPolicy
                 - application-autoscaling:DeregisterScalableTarget
@@ -427,9 +425,9 @@ Resources:
                 - "ec2:AssignPrivateIpAddresses"
                 - "ec2:UnassignPrivateIpAddresses"
                 - "ec2:AttachNetworkInterface"
-                - ec2:DescribeVpcs
-                - ec2:DescribeSubnets
-                - ec2:DescribeSecurityGroups
+                - "ec2:DescribeVpcs"
+                - "ec2:DescribeSubnets"
+                - "ec2:DescribeSecurityGroups"
                 - "logs:CreateLogGroup"
                 - "logs:CreateLogStream"
                 - "logs:PutLogEvents"
@@ -620,7 +618,7 @@ Resources:
             Resource: '*'
           - Effect: Allow
             Action:
-              - 'dynamodb:*'
+              #- 'dynamodb:*'
               - 'dax:*'
               - 'application-autoscaling:DeleteScalingPolicy'
               - 'application-autoscaling:DeregisterScalableTarget'
