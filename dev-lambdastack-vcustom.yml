@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Lambda application.
+Resources:
+  function:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: qa-telematics-macviewcustomequipmentsdetails
+      CodeUri: s3://dev.telematics.outartifacts/175c20aef1f67954d8c2c2010cbfb4f8
+      Handler: herc.telematics.macequipment.FetchEquipmentDetails::handleRequest
+      Environment:
+        Variables:
+          ConnectionString: '{{resolve:secretsmanager:telematics/elevate:SecretString:qa}}'
+          cachePort: 6379
+          cacheconnectionUrl: qa-telematics-elasticcache.9zmxds.0001.use1.cache.amazonaws.com
+      Runtime: java11
+      Description: Java function
+      MemorySize: 512
+      Timeout: 30
+      Tracing: Active
+      VpcConfig:
+        SecurityGroupIds:
+        - sg-96aa31ee
+        SubnetIds:
+        - subnet-bc28a093
+        - subnet-dd038785
+      Tags:
+        CostCenter: '9038'
+        ITOwner: Sunil Gupta
+        Environment: qa
+        ResourceType: Lambda
+        Name: qa-telematics-macequipmentsdetails
+  GraphQLApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      AuthenticationType: API_KEY
+      Name: qa-telematics-macequipmentdetails
+  AppSyncApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - GraphQLApi
+        - ApiId
+      Description: mac equipment details
+  LambdaAsDatasource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - GraphQLApi
+        - ApiId
+      Name: MacViewCustomEquipment
+      Description: triggering the MAC view custom Equipment lambda
+      Type: AWS_LAMBDA
+      LambdaConfig:
+        LambdaFunctionArn:
+          Fn::GetAtt:
+          - function
+          - Arn
+      ServiceRoleArn: arn:aws:iam::567234402044:role/Appysync_DynamodbInvoke
+  QueryGetPostResolver:
+    Type: AWS::AppSync::Resolver
+    DependsOn: Schema
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - GraphQLApi
+        - ApiId
+      TypeName: Query
+      FieldName: getMacEquipments
+      DataSourceName:
+        Fn::GetAtt:
+        - LambdaAsDatasource
+        - Name
+      RequestMappingTemplate: "{ \n\n   \"version\" : \"2017-02-28\", \n   \"operation\"\
+        : \"Invoke\", \n   \"payload\": $util.toJson($context.args)\n} \n"
+      ResponseMappingTemplate: '$utils.toJson($context.result)
+
+        '
+  Schema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId:
+        Fn::GetAtt:
+        - GraphQLApi
+        - ApiId
+      Definition: "schema {\n    query: Query\n}\n\ntype Equipment {\n    customEquipmentName:\
+        \ String\n    equipmentName: String\n    icNumber: String\n}\n\ntype EquipmentsData\
+        \ {\n    equipmentDetails: [Equipment]\n    errorMessage: String\n}\n\ntype\
+        \ Query {\n    getMacEquipments(customerNumber: String!, ic: [String]! ,divisionCode:\
+        \ String!): EquipmentsData\n}\n"
+Outputs:
+  GraphQLApiEndpoint:
+    Description: The URL to the GraphQL Endpoint
+    Value:
+      Fn::GetAtt:
+      - GraphQLApi
+      - GraphQLUrl
+  GraphQLApiId:
+    Description: The API ID of the GraphQL API
+    Value:
+      Fn::GetAtt:
+      - GraphQLApi
+      - ApiId
