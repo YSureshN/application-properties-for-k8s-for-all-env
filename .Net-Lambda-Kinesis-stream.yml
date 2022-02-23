@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: An AWS Lambda application.
+Description: 'This AWS CloudFormation Template is for TrackUnit Integration'
 Parameters:
   Environment:
     Description: 'Environment: dev,qa,stg,prod' 
@@ -21,22 +21,20 @@ Parameters:
     Description: The S3 bucket that contains the application code.
     Type: String
     Default: 'lambda_function/mac-equipment-details-0.0.1-SNAPSHOT.jar'
-  
+
 Mappings:
   dev:
     Layer:
       "VpcId": "vpc-1081ac74"
       "SubnetId1": "subnet-dd038785"
       "SubnetId2": "subnet-bc28a093"
-      "SecurityGroupID": "sg-9bad17e3" # need to add sg-96aa31ee
+      "SecurityGroupID": "sg-9bad17e3" 
       "PubSubnetId1": "subnet-a04ee1f8"
       "PubSubnetId2": "subnet-191faa33"
       "RawDataS3Bucket": "dev.telematics.inartifacts"
       "ProcessedDataS3Bucket": "dev.telematics.outartifacts"
       "RetentionInDays": "7"
-      #"ConnectionString": "{{resolve:secretsmanager:telematics/elevate:SecretString:dev}}"
-      "secretsmanager": "telematics/elevate"
-      "SecretString": "dev"
+      "ConnectionString": "{{resolve:secretsmanager:telematics/elevate:SecretString:dev}}"
             
   qa:
     Layer:
@@ -49,9 +47,7 @@ Mappings:
       "RawDataS3Bucket": "dev.telematics.inartifacts"
       "ProcessedDataS3Bucket": "dev.telematics.outartifacts"
       "RetentionInDays": "7"
-      #"ConnectionString": "{{resolve:secretsmanager:telematics/elevate:SecretString:qa}}"
-      "secretsmanager": "telematics/elevate"
-      "SecretString": "qa"
+      "ConnectionString": "{{resolve:secretsmanager:telematics/elevate:SecretString:qa}}"
 
   stg:
     Layer:
@@ -64,9 +60,7 @@ Mappings:
       "RawDataS3Bucket": "dev.telematics.inartifacts"
       "ProcessedDataS3Bucket": "dev.telematics.outartifacts"
       "RetentionInDays": "14"
-      #"ConnectionString": "{{resolve:secretsmanager:telematics/elevate:SecretString:stg}}"
-      "secretsmanager": "telematics/elevate"
-      "SecretString": "stg"
+      "ConnectionString": "{{resolve:secretsmanager:telematics/elevate:SecretString:stg}}"
 
   prod:
     Layer:
@@ -79,19 +73,208 @@ Mappings:
       "RawDataS3Bucket": "dev.telematics.inartifacts"
       "ProcessedDataS3Bucket": "dev.telematics.outartifacts"
       "RetentionInDays": "30"
-      #"ConnectionString": "{{resolve:secretsmanager:telematics/elevate:SecretString:prod}}"
-      "secretsmanager": "telematics/elevate"
-      "SecretString": "prod"
+      "ConnectionString": "{{resolve:secretsmanager:telematics/elevate:SecretString:prod}}"
 
-Resources:
-  TelematicsGatewayProcessor:
-    Type: 'AWS::Lambda::Function'
+
+Resources:     
+  KinesisRawDataStream:
+    Type: 'AWS::Kinesis::Stream'
     Properties:
-      FunctionName: 
+      Name:
         'Fn::Join':
           - '-'
           - - Ref: Environment
-            - TelematicsGatewayProcessor1
+            - telemetry-raw-data-stream                    
+      RetentionPeriodHours: 24
+      ShardCount: 1
+      Tags: 
+        - Key: "Environment"
+          Value: 
+            Ref: Environment         
+        - Key: "ResourceType"
+          Value: "Kinesis Data Stream"
+        - Key: "CostCenter"
+          Value: "9038"
+        - Key: "Application"
+          Value: "Elevate-Telematics"
+        - Key: "ITOwner"
+          Value: "Sunil Gupta"
+        - Key: "Name"
+          Value: 
+            'Fn::Join':
+                - '-'
+                - - Ref: Environment
+                  - telemetry-raw-data-stream   
+  KinesisProcessedDataStream:
+    Type: 'AWS::Kinesis::Stream'
+    Properties:
+      Name:
+        'Fn::Join':
+            - '-'
+            - - Ref: Environment
+              - telemetry-processed-data-stream
+      RetentionPeriodHours: 24
+      ShardCount: 1
+      Tags: 
+        - Key: "Environment"
+          Value: 
+            Ref: Environment         
+        - Key: "ResourceType"
+          Value: "Kinesis Data Stream"
+        - Key: "CostCenter"
+          Value: "9038"
+        - Key: "Application"
+          Value: "Elevate-Telematics"
+        - Key: "ITOwner"
+          Value: "Sunil Gupta"
+        - Key: "Name"
+          Value: 
+            'Fn::Join':
+                - '-'
+                - - Ref: Environment
+                  - telemetry-processed-data-stream 
+  KinesisProcessedDataDeliveryStream:
+    Type: 'AWS::KinesisFirehose::DeliveryStream'
+    Properties:
+      DeliveryStreamName: 
+        'Fn::Join':
+            - '-'
+            - - Ref: Environment
+              - telemetry-processed-data-delivery-stream
+      DeliveryStreamType: KinesisStreamAsSource
+      KinesisStreamSourceConfiguration:
+        KinesisStreamARN: 
+          'Fn::GetAtt':
+            - KinesisProcessedDataStream
+            - Arn
+        RoleARN: arn:aws:iam::567234402044:role/Telematics-KinesisDataFirehoseRole
+      S3DestinationConfiguration:
+        BucketARN: 'arn:aws:s3:::dev.telematics.outartifacts'
+        RoleARN: arn:aws:iam::567234402044:role/Telematics-KinesisDataFirehoseRole
+      Tags: 
+        - Key: "Environment"
+          Value: 
+            Ref: Environment         
+        - Key: "ResourceType"
+          Value: "Kinesis Delivery Stream"
+        - Key: "CostCenter"
+          Value: "9038"
+        - Key: "Application"
+          Value: "Elevate-Telematics"
+        - Key: "ITOwner"
+          Value: "Sunil Gupta"
+        - Key: "Name"
+          Value: 
+            'Fn::Join':
+                - '-'
+                - - Ref: Environment
+                  - telemetry-processed-data-stream
+
+  KinesisRawDataDeliveryStream:
+    Type: 'AWS::KinesisFirehose::DeliveryStream'
+    Properties:
+      DeliveryStreamName: 
+        'Fn::Join':
+            - '-'
+            - - Ref: Environment
+              - telemetry-raw-data-delivery-stream
+      DeliveryStreamType: KinesisStreamAsSource
+      KinesisStreamSourceConfiguration:
+        KinesisStreamARN: 
+          'Fn::GetAtt':
+            - KinesisRawDataStream
+            - Arn
+        RoleARN: arn:aws:iam::567234402044:role/Telematics-KinesisDataFirehoseRole
+      S3DestinationConfiguration:
+          BucketARN: 'arn:aws:s3:::dev.telematics.inartifacts'
+          RoleARN: arn:aws:iam::567234402044:role/Telematics-KinesisDataFirehoseRole
+
+      Tags: 
+        - Key: "Environment"
+          Value: 
+            Ref: Environment         
+        - Key: "ResourceType"
+          Value: "Kinesis Delivery Stream"
+        - Key: "CostCenter"
+          Value: "9038"
+        - Key: "Application"
+          Value: "Elevate-Telematics"
+        - Key: "ITOwner"
+          Value: "Sunil Gupta"
+        - Key: "Name"
+          Value: 
+            'Fn::Join':
+                - '-'
+                - - Ref: Environment
+                  - telemetry-raw-data-stream
+  
+  ElastiCache:
+    Type: "AWS::ElastiCache::CacheCluster"
+    Properties:
+      NumCacheNodes: 1
+      Port: 6379
+      ClusterName:
+        'Fn::Join':
+            - '-'
+            - - Ref: Environment
+              - telematics-elasticcache
+      CacheNodeType: "cache.r6g.large"
+      CacheParameterGroupName: "default.redis6.x"
+      CacheSubnetGroupName: "cache-data-subnet-qa"
+      Engine: "redis"
+      EngineVersion: "6.2"
+      VpcSecurityGroupIds: 
+        - !FindInMap [ !Ref "Environment", Layer, SecurityGroupID ]
+    
+  TrackunitSQS:
+    Type: AWS::SQS::Queue
+    Properties: 
+      QueueName:
+        'Fn::Join':
+            - '-'
+            - - Ref: Environment
+              - elevate-trackunit-queue   
+      Tags: 
+        - Key: "Environment"
+          Value: 
+            Ref: Environment         
+        - Key: "ResourceType"
+          Value: "SQS"
+        - Key: "CostCenter"
+          Value: "9038"
+        - Key: "Application"
+          Value: "Elevate-Telematics"
+        - Key: "ITOwner"
+          Value: "Sunil Gupta"
+        - Key: "Name"
+          Value: 
+            'Fn::Join':
+                - '-'
+                - - Ref: Environment
+                  - telemetry-raw-data-stream
+      VisibilityTimeout: 30
+
+  KineissAnalyticsStreamingApplication:
+    Type: AWS::KinesisAnalyticsV2::Application
+    Properties:
+      RuntimeEnvironment: FLINK-1_11
+      ServiceExecutionRole: arn:aws:iam::567234402044:role/Telematics-KinesisDataAnalyticsRole
+      ApplicationConfiguration:
+        ApplicationCodeConfiguration:
+          CodeContent:
+            S3ContentLocation:
+              BucketARN: "arn:aws:s3:::dev.elevateteledata"
+              FileKey: kinesis-to-timestream-16.0.jar
+          CodeContentType: 'ZIPFILE'
+
+  TrackUnitProcessorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName:
+        Fn::Join:
+          - '-'
+          - - Ref: Environment
+            - Trackunit-processor1
       Tags: 
         - Key: "Environment"
           Value: 
@@ -107,10 +290,7 @@ Resources:
             'Fn::Join':
               - '-'
               - - Ref: Environment
-                - TelematicsGatewayProcessor11
-    
-      Handler: herc.telematics.equipmentcustomname.handler.UpdateEquipmentCustomNameHandler
-      Runtime: dotnetcore3.1
+                - Trackunit-processor1
       TracingConfig:
         Mode: Active
       Code:
@@ -118,10 +298,8 @@ Resources:
           Ref: S3BucketName
         S3Key: 
           Ref: S3BucketKey
-      Environment:
-        Variables:
-          secretsmanager: !FindInMap [ !Ref "Environment", Layer, secretsmanager ]
-          SecretString: !FindInMap [ !Ref "Environment", Layer, SecretString ]
+      Handler: HERC.Telematics.TrackUnit.Processor::HERC.Telematics.TrackUnit.Processor.TrackUnitProcessor::FunctionHandler
+      Runtime: dotnetcore3.1
       Description: .NET function
       MemorySize: 512
       Timeout: 15
@@ -131,46 +309,13 @@ Resources:
           - !FindInMap [ !Ref "Environment", Layer, SubnetId2 ]
         SecurityGroupIds: 
           - !FindInMap [ !Ref "Environment", Layer, SecurityGroupID ]
-      #Role: !Sub arn:aws:iam::${AWS::AccountId}:role/LambdaFunctionRole
-      Role: arn:aws:iam::567234402044:role/herc.dev.TelematicsGateway.lambdaexcution
-  
-  KinesisStream:
-    Type: AWS::Kinesis::Stream
-    #DependsOn: TelematicsGatewayProcessor
-    Properties: 
-      Name: 
-        'Fn::Join':
-          - '-'
-          - - Ref: Environment
-            - TelematicsGateway1
-      RetentionPeriodHours: 24
-      ShardCount: 3
-      StreamModeDetails: 
-        StreamMode: PROVISIONED
-      Tags: 
-        - Key: "Environment"
-          Value: 
-            Ref: Environment  
-        - Key: "Application"
-          Value: "ProControl-Telematics"     
-        - Key: "ResourceType"
-          Value: "Kinesis"
-        - Key: "CostCenter"
-          Value: "9038"
-        - Key: "ITOwner"
-          Value: "Sunil Gupta"
-        - Key: "Name"
-          Value: 
-            'Fn::Join':
-              - '-'
-              - - Ref: Environment
-                - TelematicsGateway
-  
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/Telematics-LambdaAccessRole
+
   LambdaTrigger:
     Type: 'AWS::Lambda::EventSourceMapping'
     DependsOn: 
-      - KinesisStream
-      - TelematicsGatewayProcessor
+      - KinesisRawDataStream
+      - TrackUnitProcessorFunction
     Properties:
       BatchSize: 100
       MaximumRecordAgeInSeconds: -1
@@ -178,9 +323,23 @@ Resources:
       StartingPosition: LATEST
       EventSourceArn:
         Fn::GetAtt:
-          - "KinesisStream"
+          - "KinesisRawDataStream"
           - "Arn"
       FunctionName:
         Fn::GetAtt:
-          - "TelematicsGatewayProcessor"
+          - "TrackUnitProcessorFunction"
           - "Arn"
+
+  EventInvokeConfig:
+    Type: AWS::Lambda::EventInvokeConfig
+    Properties:
+      FunctionName: !Ref TrackUnitProcessorFunction
+      Qualifier: $LATEST
+      MaximumEventAgeInSeconds: 600
+      MaximumRetryAttempts: 0
+      DestinationConfig:
+        OnFailure:
+          Destination:
+            Fn::GetAtt:
+              - "TrackunitSQS"
+              - "Arn"
