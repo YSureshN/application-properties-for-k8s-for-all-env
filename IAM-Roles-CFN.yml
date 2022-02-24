@@ -53,13 +53,14 @@ Resources:
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - codebuild.amazonaws.com
-                - cloudformation.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
+          Effect: Allow
+          Principal:
+            Service:
+              - codebuild.amazonaws.com
+              - cloudformation.amazonaws.com
+              - sts.amazonaws.com
+          Action: 'sts:AssumeRole'
+
       Policies:
         # - PolicyName: TelematicsvpcPolicy
         - PolicyName:
@@ -77,35 +78,60 @@ Resources:
                 Action:
                   - "ec2:CreateNetworkInterface"
                   - "ec2:DescribeNetworkInterfaces"
+                  - "ec2:CreateNetworkInterfacePermission"
                   - "ec2:DetachNetworkInterface"
                   - "ec2:DeleteNetworkInterface"
-                  - "ec2:DescribeNetworkInterfaces"
+                  - "ec2:DescribeDhcpOptions"
                   - "ec2:DescribeSecurityGroups"
                   - "ec2:DescribeSubnets"
+                  - "ec2:DescribeVpcs"
                   - "ec2:AssignPrivateIpAddresses"
                   - "ec2:UnassignPrivateIpAddresses"
                   - "ec2:AttachNetworkInterface"
+                  - "eks:DescribeCluster"
+                  - "dynamodb:DescribeTable"
+                  - "dynamodb:CreateTable"
+                  - "dynamodb:DeleteTable"
+                  - "kinesis:DescribeStreamSummary"
+                  - "kinesis:DeleteStream"
+                  - "kinesis:CreateStream"
+                  - "kinesis:AddTagsToStream"
+                  - "appsync:*"
+                  - "appsync:DeleteDataSource"
+                  - "appsync:DeleteResolver"
+                  - "appsync:DeleteGraphqlApi"
+                  - "appsync:DeleteApiKey"
                   - "logs:CreateLogGroup"
                   - "logs:CreateLogStream"
                   - "logs:PutLogEvents"
                   - "lambda:UpdateFunctionCode"
                   - 'lambda:*'
+                  - "sqs:*"
+                  - "application-autoscaling:DeleteScalingPolicy"
+                  - "application-autoscaling:DeregisterScalableTarget"
+                  - "application-autoscaling:DescribeScalableTargets"
+                  - "application-autoscaling:DescribeScalingActivities"
+                  - "application-autoscaling:DescribeScalingPolicies"
+                  - "application-autoscaling:PutScalingPolicy"
+                  - "application-autoscaling:RegisterScalableTarget"
                 Resource: "*"
       ManagedPolicyArns: 
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
         - arn:aws:iam::aws:policy/CloudWatchFullAccess
         - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/AWSCodeBuildAdminAccess
+        - arn:aws:iam::aws:policy/AmazonEKSClusterPolicy
   
   SecretManagerPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties: 
-      Description: Managed Policy to codebild Role
+      Description: Managed Policy to codebuild Role
       #ManagedPolicyName: TelematicsCodebuildMicroServicebuildallPolicy
       ManagedPolicyName:
         Fn::Join:
           - '-'
           - - Ref: Project
-            - microservicepolicies
+            - microservicepoliciescodebuild
       Path: /
       PolicyDocument: 
         Version: "2012-10-17"
@@ -135,9 +161,14 @@ Resources:
               - 'ecr:GetDownloadUrlForLayer'
               - 'ecr:InitiateLayerUpload'
               - 'ecr:PutImage'
+              - 'ecr:BatchGetImage'
               - 'ecr:UploadLayerPart'
               - 'ecr:PullImage'
               - 'iam:PassRole'
+              - 'logs:CreateLogGroup'
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+              - 'ssm:GetParameters'
             Resource: "*"
           - Effect: Allow
             Action:
@@ -146,6 +177,7 @@ Resources:
               - 'events:DeleteRule'
               - 'events:DisableRule'
               - 'events:RemoveTargets'
+              - 'events:DescribeRule'
               - 'sns:ListTopics'
               - 'sqs:GetQueueUrl'
               - 'ssm:GetParameters'
@@ -254,6 +286,7 @@ Resources:
                   - 'lambda:*'
                   - 'apigateway:*'
                   - 'events:*'
+                  - 'appsync:*'
                 Resource: "*"
               - Effect: Allow
                 Action:
@@ -379,6 +412,8 @@ Resources:
                 - kinesis:ListStreams
                 - kinesis:DescribeStream
                 - kinesis:DescribeStreamSummary
+                - kafka:DescribeCluster
+                - kafka:GetBootstrapBrokers
               Resource: "*"
             - Effect: Allow
               Action: cloudwatch:GetInsightRuleReport
