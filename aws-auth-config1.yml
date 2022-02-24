@@ -1,0 +1,46 @@
+[9:06 pm] Ajayi, Ayodeji
+# Please edit the object below. Lines beginning with a '#' will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: v1
+data:
+mapRoles: |
+- groups:
+- system:bootstrappers
+- system:nodes
+rolearn: arn:aws:iam::567234402044:role/Telematics-EKSNodeGroupRole
+username: system:node:{{EC2PrivateDNSName}}
+- groups:
+- system:masters
+rolearn: arn:aws:iam::567234402044:role/Telematics-CodebuildIAMRole
+username: Telematics-CodebuildIAMRole
+- groups:
+- system:masters
+rolearn: arn:aws:iam::567234402044:role/Telematics-EKSclusterRole
+username: Telematics-EKSclusterRole
+mapUsers: |
+- userarn: arn:aws:iam::567234402044:user/VThota
+username: VThota
+groups:
+- system:masters
+- userarn: arn:aws:iam::567234402044:user/DSingh
+username: DSingh
+groups:
+- system:masters
+- userarn: arn:aws:iam::567234402044:user/SYerraguntla
+username: SYerraguntla
+groups:
+- system:masters
+- userarn: arn:aws:iam::567234402044:user/MGoga
+username: MGoga
+groups:
+- system:masters
+kind: ConfigMap
+metadata:
+creationTimestamp: "2022-02-24T07:40:21Z"
+name: aws-auth
+namespace: kube-system
+resourceVersion: "53050"
+uid: c98432c0-7d2c-477f-a09a-caccd5e33173
+
