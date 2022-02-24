@@ -1,0 +1,7 @@
+Getting "Unable to recognize \"hello-k8s.yml\": Unauthorized" error when running kubectl apply -f hello-k8s.yml in CodeBuild phase
+https://stackoverflow.com/questions/59171413/getting-unable-to-recognize-hello-k8s-yml-unauthorized-error-when-running
+
+
+AWS CodeBuild VPC_CLIENT_ERROR: Unexpected EC2 error: UnauthorizedOperation
+https://stackoverflow.com/questions/58321632/aws-codebuild-vpc-client-error-unexpected-ec2-error-unauthorizedoperation
+
