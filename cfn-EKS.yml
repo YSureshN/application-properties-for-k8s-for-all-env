@@ -1,0 +1,184 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'This AWS CloudFormation Template is for Telematics EKS Cluster'
+
+#-----------------------------------------------------------------------------
+# Parameters
+#-----------------------------------------------------------------------------
+
+Parameters:
+  ApplicationName:
+    Type: String
+    Default: "Telematics-EKS-Cluster"
+  EnvType:
+    Description: 'Environment: dev,qa,stg,prod'
+    Type: String
+    Default: qa
+    AllowedValues:
+    - dev
+    - qa
+    - stg
+    - prod
+    ConstraintDescription: must be either 'dev','qa','stg' or 'prod'
+  
+
+
+#-----------------------------------------------------------------------------
+# Mappings
+#-----------------------------------------------------------------------------
+
+Mappings:
+  dev:
+    Layer:
+      "VpcId": "vpc-1081ac74"
+      "SubnetId1": "subnet-dd038785"
+      "SubnetId2": "subnet-bc28a093"
+      "PubSubnetId1": "subnet-a04ee1f8"
+      "PubSubnetId2": "subnet-191faa33"
+      "RDSSecurityGroup": "sg-96aa31ee"
+      "DBSubnetGroupName": "dev.rds.subnetgrp"
+      "MSKSecurityGroups": "sg-9bad17e3"
+      "EKSClusterSecurityGroupIdsone": "sg-0254a72c37a13191f"
+      "EKSClusterSecurityGroupIdstwo": "sg-0553232152be703cf"
+      "EKSClusterSecurityGroupIdsthree": "sg-9bad17e3"
+      "NodeEc2SshKey": "devutil"
+      "NodeSecurityGroups": "sg-9bad17e3"
+      "DispatcherSecurityGroup1": "sg-9bad17e3"
+      "CertArn": "arn:aws:acm:us-east-1:567234402044:certificate/5a14fe12-c8b1-4be3-b6fa-09b7da98c6fc"
+      "RetentionInDays": "7"
+ 
+  qa:
+    Layer:
+      "VpcId": "vpc-9ad5dafe"
+      "SubnetId1": "subnet-86e163de"
+      "SubnetId2": "subnet-b0813a9a"
+      "PubSubnetId1": "subnet-a6e062fe"
+      "PubSubnetId2": "subnet-2482390e"
+      "RDSSecurityGroup": "sg-96aa31ee"
+      "DBSubnetGroupName": "dev.rds.subnetgrp"
+      "MSKSecurityGroups": "sg-9ecb8fe6"
+      "EKSClusterSecurityGroupIdsone": "sg-02b1fad249c61d881"
+      "EKSClusterSecurityGroupIdstwo": "sg-0cf27dc6520262fae"
+      "EKSClusterSecurityGroupIdsthree": "sg-9ecb8fe6"
+      "NodeEc2SshKey": "devutil"
+      "NodeSecurityGroups": "sg-9ecb8fe6"
+      "DispatcherSecurityGroup1": "sg-9ecb8fe6"
+      "CertArn": "arn:aws:acm:us-east-1:567234402044:certificate/5a14fe12-c8b1-4be3-b6fa-09b7da98c6fc"
+      "RetentionInDays": "7"
+
+  stg:
+    Layer:
+      "VpcId": "vpc-a29785c6"
+      "SubnetId1": "subnet-fdf1bdc0"
+      "SubnetId2": "subnet-f54d3383"
+      "PubSubnetId1": "subnet-024f3174"
+      "PubSubnetId2": "subnet-85f0bcb8"
+      "RDSSecurityGroup": "sg-96aa31ee"
+      "DBSubnetGroupName": "dev.rds.subnetgrp"
+      "MSKSecurityGroups": "sg-9bad17e3"
+      "EKSClusterSecurityGroupIdsone": "sg-0254a72c37a13191f"
+      "EKSClusterSecurityGroupIdstwo": "sg-0553232152be703cf"
+      "EKSClusterSecurityGroupIdsthree": "sg-9bad17e3"
+      "NodeEc2SshKey": "devutil"
+      "NodeSecurityGroups": "sg-9bad17e3"
+      "DispatcherSecurityGroup1": "sg-9bad17e3"
+      "CertArn": "arn:aws:acm:us-east-1:110972972731:certificate/a7d5744c-5854-4c05-983e-1913bdd6bc9f"
+      "RetentionInDays": "14"
+
+  prod:
+    Layer:
+      "VpcId": "vpc-e8ece28c"
+      "SubnetId1": "subnet-ca7e0bbc"
+      "SubnetId2": "subnet-939d27b9"
+      "PubSubnetId1": "subnet-cb7e0bbd"
+      "PubSubnetId2": "subnet-0ece4356"
+      "RDSSecurityGroup": "sg-96aa31ee"
+      "DBSubnetGroupName": "dev.rds.subnetgrp"
+      "MSKSecurityGroups": "sg-9bad17e3"
+      "EKSClusterSecurityGroupIdsone": "sg-0254a72c37a13191f"
+      "EKSClusterSecurityGroupIdstwo": "sg-0553232152be703cf"
+      "EKSClusterSecurityGroupIdsthree": "sg-9bad17e3"
+      "NodeEc2SshKey": "devutil"
+      "NodeSecurityGroups": "sg-9bad17e3"
+      "DispatcherSecurityGroup1": "sg-9bad17e3"
+      "CertArn": "arn:aws:acm:us-east-1:110972972731:certificate/a7d5744c-5854-4c05-983e-1913bdd6bc9f"
+      "RetentionInDays": "30"
+
+#-----------------------------------------------------------------------------
+# Conditions
+#-----------------------------------------------------------------------------
+
+Conditions:
+  CreateProdResouces: !Or [!Equals [ !Ref EnvType, prod ], !Equals [ !Ref EnvType, stg ]]
+  CreateDevResouces: !Or [!Equals [ !Ref EnvType, dev ], !Equals [ !Ref EnvType, qa ]]
+
+Resources:
+
+  #-----------------------------------------------------------------------------
+  # This CloudFormation Script for EKS Cluster creating
+  #-----------------------------------------------------------------------------
+  
+  EKSCluster:
+    Type: "AWS::EKS::Cluster"
+    Properties:
+      Name:
+        'Fn::Join':
+            - '-'
+            - - Ref: EnvType
+              - elevatetelematics-ms
+      ResourcesVpcConfig:
+        SecurityGroupIds: 
+          - !FindInMap [ !Ref "EnvType", Layer, EKSClusterSecurityGroupIdsthree ]
+        SubnetIds: 
+          - !FindInMap [ !Ref "EnvType", Layer, SubnetId1 ]
+          - !FindInMap [ !Ref "EnvType", Layer, SubnetId2 ]
+        EndpointPublicAccess: false
+        EndpointPrivateAccess: true
+      RoleArn: arn:aws:iam::567234402044:role/Telematics-EKSclusterRole
+      Version: "1.21"
+      Tags:
+        - Key: Name
+          Value: !Join [".", [!Ref EnvType, !Ref ApplicationName, "EKS-Cluster"]]
+        - Key: Project
+          Value: !Ref ApplicationName
+        - Key: Owner
+          Value: Sunil Gupta
+        - Key: Environment
+          Value: !Ref EnvType
+        - Key: Application
+          Value: !Ref ApplicationName
+        - Key: ParkMyCloud
+          Value: FALSE
+  
+  #-----------------------------------------------------------------------------
+  # This CloudFormation Script EKS Node Group and Autoscaling Maping to above EKS Cluster
+  #-----------------------------------------------------------------------------
+  
+  EKSNodegroup:
+    Type: 'AWS::EKS::Nodegroup'
+    DependsOn: EKSCluster
+    Properties:
+      ClusterName: !Ref EKSCluster
+      NodegroupName: 
+        'Fn::Join':
+            - '-'
+            - - Ref: EnvType
+              - elevatetelematics-ms-nodegroup
+      NodeRole: arn:aws:iam::567234402044:role/Telematics-EKSNodeGroupRole
+      DiskSize: 100
+      InstanceTypes:
+        - t3.large
+      RemoteAccess:
+        Ec2SshKey: !FindInMap [ !Ref "EnvType", Layer, NodeEc2SshKey ]
+        SourceSecurityGroups:
+          - !FindInMap [ !Ref "EnvType", Layer, NodeSecurityGroups ]
+      ScalingConfig:
+        MinSize: 2
+        DesiredSize: 2
+        MaxSize: 2
+      Labels:
+        Key1: nodegroup-1
+      Subnets:
+        - !FindInMap [ !Ref "EnvType", Layer, SubnetId1 ]
+        - !FindInMap [ !Ref "EnvType", Layer, SubnetId2 ]
+      Tags:
+        ParkMyCloud: FALSE
