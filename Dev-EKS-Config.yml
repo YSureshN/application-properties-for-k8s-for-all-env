@@ -1,0 +1,30 @@
+version: 0.2
+
+phases:
+
+  pre_build:
+    commands: 
+      - echo deployment to dev
+
+  post_build:
+    commands:
+      - echo Connecting to dev EKS Cluster
+      - aws eks update-kubeconfig --name dev-elevatetelematics-ms
+      - echo Creating a dev configmap for geofence-api
+      - kubectl delete configmap geofence-config 
+      - kubectl create configmap geofence-config --from-file=geofence-api/application.properties
+      - echo Creating a dev configmap for alert-api
+      - kubectl delete configmap alert-config
+      - kubectl create configmap alert-config --from-file=alert-api/application-dev.properties
+      - echo Creating a dev configmap for equipmentsummary-api
+      - kubectl delete configmap equipmentsummary-config
+      - kubectl create configmap equipmentsummary-config --from-file=equipmentsummary-api/application-dev.properties
+      - echo Creating a dev configmap for lighttower-api
+      - kubectl delete configmap lighttower-config
+      - kubectl create configmap lighttower-config --from-file=lighttower-api/application.properties
+      - echo Creating a dev configmap for otg-api
+      - kubectl delete configmap otg-config
+      - kubectl create configmap otg-config --from-file=otg-api/application-dev.properties
+      - echo Creating a dev configmap for trackunitsim-api
+      - kubectl delete configmap trackunitsim-config
+      - kubectl create configmap trackunitsim-config --from-file=trackunitsim-api/application.properties
