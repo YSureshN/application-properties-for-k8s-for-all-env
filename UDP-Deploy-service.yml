@@ -1,5 +1,94 @@
-#https://docs.konghq.com/kubernetes-ingress-controller/2.0.x/guides/using-udpingress/
+# This is the Correct One
 
+# STEP: 1
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: qa-telematics-ekslighttowerudpapi
+#   labels:
+#     app: lighttowerapiudp
+#   annotations:
+#      service.beta.kubernetes.io/aws-load-balancer-type: "external"
+#      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+# spec:
+#   type: LoadBalancer
+#   selector:
+#     app: lighttowerapiudp
+#   ports:
+#     - port: 53
+#       name: udp
+#       protocol: UDP
+#       targetPort: 9090
+#       nodePort: Get this entry from the ELB in aws console
+
+# STEP: 2
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: qa-telematics-ekslighttowerudpapi
+  labels:
+    app: lighttowerapiudp
+spec:
+  type: NodePort
+  selector:
+    app: lighttowerapiudp
+  ports:
+    - port: 53
+      name: udp
+      protocol: UDP
+      targetPort: 9090
+      nodePort: 30853
+    - port: 53
+      name: ping
+      protocol: TCP
+      targetPort: 8080
+      nodePort: 30853
+
+#https://docs.konghq.com/kubernetes-ingress-controller/2.0.x/guides/using-udpingress/ (UDP Listner Blob)
+#https://medium.com/asl19-developers/build-your-own-cloud-agnostic-tcp-udp-loadbalancer-for-your-kubernetes-apps-3959335f4ec3 (UDP Listner Blob)
+
+# STEP3:-
+
+# This is for deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qa-web-dep-lighttowerudpapi
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lighttowerapiudp
+  template:
+    metadata:
+      labels:
+        app: lighttowerapiudp
+    spec:
+      containers:
+        - name: lighttowerudplistner
+          image: 567234402044.dkr.ecr.us-east-1.amazonaws.com/dev.telematics.ekslighttowerudpapi:latest
+          ports:
+            - containerPort: 9090
+              protocol: UDP
+            - containerPort: 9091
+              protocol: UDP
+            - containerPort: 9092
+              protocol: UDP
+            - containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: lighttowerudp-config
+ 
+ 
+ ==========================================
+# This is for reference only
 apiVersion: apps/v1
 kind: Deployment
 metadata:
